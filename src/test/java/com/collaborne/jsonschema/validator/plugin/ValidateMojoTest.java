@@ -19,11 +19,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jackson.JacksonUtils;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
@@ -35,7 +32,7 @@ public class ValidateMojoTest {
 	private final ObjectMapper objectMapper = JacksonUtils.newMapper();
 
 	@Test
-	public void validateNoSchemaNoRequiredReturnsReportWithWarning() throws JsonProcessingException, IOException, ProcessingException {
+	public void validateNoSchemaNoRequiredReturnsReportWithWarning() throws ProcessingException {
 		ValidateMojo validateMojo = new ValidateMojo();
 		validateMojo.setRequireSchema(false);
 		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), null);
@@ -44,7 +41,7 @@ public class ValidateMojoTest {
 	}
 
 	@Test
-	public void validateNoSchemaRequiredReturnsReportWithError() throws JsonProcessingException, IOException, ProcessingException {
+	public void validateNoSchemaRequiredReturnsReportWithError() throws ProcessingException {
 		ValidateMojo validateMojo = new ValidateMojo();
 		validateMojo.setRequireSchema(true);
 		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), null);

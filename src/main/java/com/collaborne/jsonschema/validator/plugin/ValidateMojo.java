@@ -38,7 +38,6 @@ import com.github.fge.jsonschema.core.load.configuration.LoadingConfiguration;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfiguration;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfigurationBuilder;
 import com.github.fge.jsonschema.core.report.ListProcessingReport;
-import com.github.fge.jsonschema.core.report.LogLevel;
 import com.github.fge.jsonschema.core.report.ProcessingMessage;
 import com.github.fge.jsonschema.main.JsonSchema;
 import com.github.fge.jsonschema.main.JsonSchemaFactory;
@@ -79,6 +78,7 @@ public class ValidateMojo extends AbstractMojo {
 	@Parameter(defaultValue="false")
 	private boolean requireSchema;
 
+	@Override
 	public void execute() throws MojoExecutionException {
 		URITranslatorConfigurationBuilder builder = URITranslatorConfiguration.newBuilder()
 				.setNamespace(sourceDirectory.toURI());
@@ -186,7 +186,7 @@ public class ValidateMojo extends AbstractMojo {
 	}
 
 	@VisibleForTesting
-	protected ListProcessingReport validate(JsonNode node, JsonSchemaFactory factory) throws JsonProcessingException, IOException, ProcessingException {
+	protected ListProcessingReport validate(JsonNode node, JsonSchemaFactory factory) throws ProcessingException {
 		// Determine the schema to be applied to it
 		if (!node.hasNonNull("$schema")) {
 			ListProcessingReport report = new ListProcessingReport();
