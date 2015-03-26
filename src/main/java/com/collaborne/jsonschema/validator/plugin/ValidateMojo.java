@@ -39,6 +39,7 @@ import com.github.fge.jsonschema.core.load.uri.URITranslatorConfiguration;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfigurationBuilder;
 import com.github.fge.jsonschema.core.report.ListProcessingReport;
 import com.github.fge.jsonschema.core.report.ProcessingMessage;
+import com.github.fge.jsonschema.core.report.ProcessingReport;
 import com.github.fge.jsonschema.main.JsonSchema;
 import com.github.fge.jsonschema.main.JsonSchemaFactory;
 import com.google.common.annotations.VisibleForTesting;
@@ -187,9 +188,10 @@ public class ValidateMojo extends AbstractMojo {
 
 	@VisibleForTesting
 	protected ListProcessingReport validate(JsonNode node, JsonSchemaFactory factory) throws ProcessingException {
+		ListProcessingReport report = new ListProcessingReport();
+
 		// Determine the schema to be applied to it
 		if (!node.hasNonNull("$schema")) {
-			ListProcessingReport report = new ListProcessingReport();
 			ProcessingMessage processingMessage = new ProcessingMessage();
 			processingMessage.setMessage("Missing $schema");
 			
@@ -208,7 +210,9 @@ public class ValidateMojo extends AbstractMojo {
 		// SyntaxValidator syntaxValidator = factory.getSyntaxValidator();
 		// syntaxValidator.validateSchema(schema.getSchemaTree().getNode());
 
-		return (ListProcessingReport) schema.validate(node, deepCheck);
+		ProcessingReport validationReport = schema.validate(node, deepCheck);
+		report.mergeWith(validationReport);
+		return report;
 	}
 
 	@VisibleForTesting
