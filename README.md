@@ -1,15 +1,9 @@
-[![Build Status](https://travis-ci.org/Collaborne/json-schema-bean-generator.svg?branch=master)](https://travis-ci.org/Collaborne/json-schema-bean-generator)
+[![Build Status](https://travis-ci.org/Collaborne/json-schema-validator-maven-plugin.svg?branch=master)](https://travis-ci.org/Collaborne/json-schema-validator-maven-plugin)
 
-JSON Schema Bean Generator
-==========================
+JSON Schema Validator Maven Plugin
+==================================
 
-A generator that produces Java Beans (eventually in various forms) from provided
-JSON Schema objects.
+An Apache Maven (3.2.1+) plugin that validates a set of JSON files in the project against
+JSON schema
 
-Goals
------
-
-* customizable type mapping
-* multiple output formats (POJO, AutoBeans, ...)
-* generated code is "readable" by humans
 
