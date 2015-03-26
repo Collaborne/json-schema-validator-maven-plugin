@@ -1,0 +1,5 @@
+{
+	"$schema": "http://example.com/simple-schema.json#",
+
+	"key": "value"
+}
