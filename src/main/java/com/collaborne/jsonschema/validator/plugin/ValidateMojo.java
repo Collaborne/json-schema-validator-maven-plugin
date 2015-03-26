@@ -58,6 +58,16 @@ public class ValidateMojo extends AbstractMojo {
 		public File directory;
 		public URI uri;
 
+		public DirectoryURIMapping() {
+			// Nothing
+		}
+
+		@VisibleForTesting
+		protected DirectoryURIMapping(URI uri, File directory) {
+			this.directory = directory;
+			this.uri = uri;
+		}
+
 		@Override
 		public String toString() {
 			return "{ " + directory + " -> " + uri + " }";
@@ -186,8 +196,8 @@ public class ValidateMojo extends AbstractMojo {
 					throw new MojoExecutionException("Cannot construct fixed URI", e);
 				}
 			}
-			getLog().debug("Mapping " + schemaMapping.directory + " to " + schemaMapping.uri);
-			builder.addPathRedirect(schemaMapping.uri, schemaMapping.directory.toURI());
+			getLog().debug("Mapping " + schemaMapping.directory + " to " + uri);
+			builder.addPathRedirect(uri, schemaMapping.directory.toURI());
 		}
 		return builder;
 	}

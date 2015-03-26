@@ -19,14 +19,23 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.util.Map;
+
+import org.apache.maven.plugin.MojoExecutionException;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.collaborne.jsonschema.validator.plugin.ValidateMojo.DirectoryURIMapping;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jackson.JacksonUtils;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.load.URIManager;
+import com.github.fge.jsonschema.core.load.uri.URITranslatorConfiguration;
+import com.github.fge.jsonschema.core.load.uri.URITranslatorConfigurationBuilder;
 import com.github.fge.jsonschema.core.report.ListProcessingReport;
 import com.github.fge.jsonschema.core.report.LogLevel;
 import com.google.common.collect.Iterators;
@@ -66,5 +75,21 @@ public class ValidateMojoTest {
 		ListProcessingReport report = validateMojo.validate(node, uriManager, null);
 		assertFalse(report.isSuccess());
 		assertEquals(LogLevel.ERROR, Iterators.getOnlyElement(report.iterator()).getLogLevel());
+	}
+
+	@Test
+	public void addSchemaMappingsAddsMissingSlashInUri() throws MojoExecutionException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+		DirectoryURIMapping mapping = new DirectoryURIMapping(URI.create("http://example.com"), new File("."));
+		validateMojo.setSchemaMappings(new DirectoryURIMapping[] { mapping });
+
+		URITranslatorConfigurationBuilder builder = URITranslatorConfiguration.newBuilder();
+		validateMojo.addSchemaMappings(builder);
+		URITranslatorConfiguration cfg = builder.freeze();
+
+		// FIXME: should be able to query the configuration
+		Field pathRedirectsField = URITranslatorConfiguration.class.getDeclaredField("pathRedirects");
+		pathRedirectsField.setAccessible(true);
+		Map<URI, URI> pathRedirects = (Map<URI, URI>) pathRedirectsField.get(cfg);
+		assertTrue(pathRedirects.containsKey(URI.create("http://example.com/")));
 	}
 }
