@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jackson.JacksonUtils;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.load.URIManager;
+import com.github.fge.jsonschema.core.load.uri.URITranslator;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfiguration;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfigurationBuilder;
 import com.github.fge.jsonschema.core.report.ListProcessingReport;
@@ -42,6 +43,7 @@ import com.google.common.collect.Iterators;
 
 public class ValidateMojoTest {
 	private final ObjectMapper objectMapper = JacksonUtils.newMapper();
+	private final URITranslator uriTranslator = new URITranslator(URITranslatorConfiguration.byDefault());
 	private final URIManager uriManager = new URIManager();
 
 	private ValidateMojo validateMojo;
@@ -54,7 +56,7 @@ public class ValidateMojoTest {
 	@Test
 	public void validateNoSchemaNoRequiredReturnsReportWithWarning() throws ProcessingException {
 		validateMojo.setRequireSchema(false);
-		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), uriManager, null);
+		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), uriTranslator, uriManager, null);
 		assertTrue(report.isSuccess());
 		assertEquals(LogLevel.WARNING, Iterators.getOnlyElement(report.iterator()).getLogLevel());
 	}
@@ -62,7 +64,7 @@ public class ValidateMojoTest {
 	@Test
 	public void validateNoSchemaRequiredReturnsReportWithError() throws ProcessingException {
 		validateMojo.setRequireSchema(true);
-		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), uriManager, null);
+		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), uriTranslator, uriManager, null);
 		assertFalse(report.isSuccess());
 		assertEquals(LogLevel.ERROR, Iterators.getOnlyElement(report.iterator()).getLogLevel());
 	}
@@ -72,7 +74,7 @@ public class ValidateMojoTest {
 		ObjectNode node = objectMapper.createObjectNode();
 		node.put("$schema", ":");
 
-		ListProcessingReport report = validateMojo.validate(node, uriManager, null);
+		ListProcessingReport report = validateMojo.validate(node, uriTranslator, uriManager, null);
 		assertFalse(report.isSuccess());
 		assertEquals(LogLevel.ERROR, Iterators.getOnlyElement(report.iterator()).getLogLevel());
 	}

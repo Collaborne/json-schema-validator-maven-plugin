@@ -38,6 +38,7 @@ import com.github.fge.jackson.JacksonUtils;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.load.URIManager;
 import com.github.fge.jsonschema.core.load.configuration.LoadingConfiguration;
+import com.github.fge.jsonschema.core.load.uri.URITranslator;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfiguration;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfigurationBuilder;
 import com.github.fge.jsonschema.core.report.ListProcessingReport;
@@ -107,6 +108,7 @@ public class ValidateMojo extends AbstractMojo {
 				.freeze();
 		JsonSchemaFactory factory = JsonSchemaFactory.newBuilder().setLoadingConfiguration(cfg).freeze();
 		URIManager uriManager = new URIManager(cfg);
+		URITranslator uriTranslator = new URITranslator(cfg.getTranslatorConfiguration());
 
 		DirectoryScanner scanner = new DirectoryScanner();
 		scanner.setBasedir(sourceDirectory);
@@ -120,7 +122,7 @@ public class ValidateMojo extends AbstractMojo {
 				getLog().info("Validating " + file);
 				
 				JsonNode node = mapper.readTree(file);
-				ListProcessingReport report = validate(node, uriManager, factory);
+				ListProcessingReport report = validate(node, uriTranslator, uriManager, factory);
 
 				for (Iterator<ProcessingMessage> it = report.iterator(); it.hasNext(); ) {
 					ProcessingMessage message = it.next();
@@ -203,7 +205,7 @@ public class ValidateMojo extends AbstractMojo {
 	}
 
 	@VisibleForTesting
-	protected ListProcessingReport validate(JsonNode node, URIManager uriManager, JsonSchemaFactory factory) throws ProcessingException {
+	protected ListProcessingReport validate(JsonNode node, URITranslator uriTranslator, URIManager uriManager, JsonSchemaFactory factory) throws ProcessingException {
 		ListProcessingReport report = new ListProcessingReport();
 
 		// Determine the schema to be applied to it
@@ -234,7 +236,8 @@ public class ValidateMojo extends AbstractMojo {
 		JsonSchema schema = loadedSchemas.get(schemaUri);
 		if (schema == null) {
 			// Schema we have not seen so far, load and validate it.
-			JsonNode schemaNode = uriManager.getContent(schemaUri);
+			URI realSchemaUri = uriTranslator.translate(schemaUri);
+			JsonNode schemaNode = uriManager.getContent(realSchemaUri);
 
 			SyntaxValidator syntaxValidator = factory.getSyntaxValidator();
 			syntaxValidator.validateSchema(schemaNode);
