@@ -36,8 +36,8 @@
 
 	<scm>
 		<url>https://github.com/Collaborne/json-schema-validator-maven-plugin</url>
-		<connection>scm:git:git@github.com:git://github.com/Collaborne/json-schema-validator-maven-plugin.git</connection>
-		<developerConnection>scm:git:git@github.com:git://github.com/Collaborne/json-schema-validator-maven-plugin.git</developerConnection>
+		<connection>scm:git:https://github.com/Collaborne/json-schema-validator-maven-plugin.git</connection>
+		<developerConnection>${project.scm.connection}</developerConnection>
 	</scm>
 	<issueManagement>
 		<system>github</system>
