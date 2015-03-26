@@ -19,7 +19,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -34,6 +36,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jackson.JacksonUtils;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
+import com.github.fge.jsonschema.core.load.URIManager;
 import com.github.fge.jsonschema.core.load.configuration.LoadingConfiguration;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfiguration;
 import com.github.fge.jsonschema.core.load.uri.URITranslatorConfigurationBuilder;
@@ -42,6 +45,7 @@ import com.github.fge.jsonschema.core.report.ProcessingMessage;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
 import com.github.fge.jsonschema.main.JsonSchema;
 import com.github.fge.jsonschema.main.JsonSchemaFactory;
+import com.github.fge.jsonschema.processors.syntax.SyntaxValidator;
 import com.google.common.annotations.VisibleForTesting;
 
 /**
@@ -50,8 +54,6 @@ import com.google.common.annotations.VisibleForTesting;
  */
 @Mojo(name="validate", defaultPhase=LifecyclePhase.PROCESS_RESOURCES, threadSafe=true)
 public class ValidateMojo extends AbstractMojo {
-	private final ObjectMapper mapper = JacksonUtils.newMapper();
-
 	public static class DirectoryURIMapping {
 		public File directory;
 		public URI uri;
@@ -61,6 +63,9 @@ public class ValidateMojo extends AbstractMojo {
 			return "{ " + directory + " -> " + uri + " }";
 		}
 	}
+
+	private final ObjectMapper mapper = JacksonUtils.newMapper();
+	private final Map<Object, JsonSchema> loadedSchemas = new HashMap<>();
 
 	/**
 	 * Optional source directories and URIs for schemas
@@ -91,6 +96,7 @@ public class ValidateMojo extends AbstractMojo {
 				.setURITranslatorConfiguration(builder.freeze())
 				.freeze();
 		JsonSchemaFactory factory = JsonSchemaFactory.newBuilder().setLoadingConfiguration(cfg).freeze();
+		URIManager uriManager = new URIManager(cfg);
 
 		DirectoryScanner scanner = new DirectoryScanner();
 		scanner.setBasedir(sourceDirectory);
@@ -104,7 +110,7 @@ public class ValidateMojo extends AbstractMojo {
 				getLog().info("Validating " + file);
 				
 				JsonNode node = mapper.readTree(file);
-				ListProcessingReport report = validate(node, factory);
+				ListProcessingReport report = validate(node, uriManager, factory);
 
 				for (Iterator<ProcessingMessage> it = report.iterator(); it.hasNext(); ) {
 					ProcessingMessage message = it.next();
@@ -187,7 +193,7 @@ public class ValidateMojo extends AbstractMojo {
 	}
 
 	@VisibleForTesting
-	protected ListProcessingReport validate(JsonNode node, JsonSchemaFactory factory) throws ProcessingException {
+	protected ListProcessingReport validate(JsonNode node, URIManager uriManager, JsonSchemaFactory factory) throws ProcessingException {
 		ListProcessingReport report = new ListProcessingReport();
 
 		// Determine the schema to be applied to it
@@ -204,11 +210,28 @@ public class ValidateMojo extends AbstractMojo {
 		}
 
 		// Load the schema
-		JsonSchema schema = factory.getJsonSchema(node.get("$schema").textValue());
-		// FIXME: We should now validate the schema itself, but we cannot get to the SchemaTree
-		//        embedded in the schema
-		// SyntaxValidator syntaxValidator = factory.getSyntaxValidator();
-		// syntaxValidator.validateSchema(schema.getSchemaTree().getNode());
+		String dollarSchema = node.get("$schema").textValue();
+		URI schemaUri;
+		try {
+			schemaUri = new URI(dollarSchema);
+		} catch (URISyntaxException e) {
+			ProcessingMessage processingMessage = new ProcessingMessage();
+			processingMessage.setMessage("Invalid $schema URI '" + dollarSchema + "': " + e.getMessage());
+			report.error(processingMessage);
+			return report;
+		}
+
+		JsonSchema schema = loadedSchemas.get(schemaUri);
+		if (schema == null) {
+			// Schema we have not seen so far, load and validate it.
+			JsonNode schemaNode = uriManager.getContent(schemaUri);
+
+			SyntaxValidator syntaxValidator = factory.getSyntaxValidator();
+			syntaxValidator.validateSchema(schemaNode);
+
+			schema = factory.getJsonSchema(schemaNode);
+			loadedSchemas.put(schemaUri, schema);
+		}
 
 		ProcessingReport validationReport = schema.validate(node, deepCheck);
 		report.mergeWith(validationReport);

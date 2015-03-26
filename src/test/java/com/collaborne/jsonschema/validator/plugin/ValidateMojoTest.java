@@ -19,32 +19,51 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jackson.JacksonUtils;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
+import com.github.fge.jsonschema.core.load.URIManager;
 import com.github.fge.jsonschema.core.report.ListProcessingReport;
 import com.github.fge.jsonschema.core.report.LogLevel;
 import com.google.common.collect.Iterators;
 
 public class ValidateMojoTest {
 	private final ObjectMapper objectMapper = JacksonUtils.newMapper();
+	private final URIManager uriManager = new URIManager();
+
+	private ValidateMojo validateMojo;
+
+	@Before
+	public void setUp() {
+		validateMojo = new ValidateMojo();
+	}
 
 	@Test
 	public void validateNoSchemaNoRequiredReturnsReportWithWarning() throws ProcessingException {
-		ValidateMojo validateMojo = new ValidateMojo();
 		validateMojo.setRequireSchema(false);
-		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), null);
+		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), uriManager, null);
 		assertTrue(report.isSuccess());
 		assertEquals(LogLevel.WARNING, Iterators.getOnlyElement(report.iterator()).getLogLevel());
 	}
 
 	@Test
 	public void validateNoSchemaRequiredReturnsReportWithError() throws ProcessingException {
-		ValidateMojo validateMojo = new ValidateMojo();
 		validateMojo.setRequireSchema(true);
-		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), null);
+		ListProcessingReport report = validateMojo.validate(objectMapper.createObjectNode(), uriManager, null);
+		assertFalse(report.isSuccess());
+		assertEquals(LogLevel.ERROR, Iterators.getOnlyElement(report.iterator()).getLogLevel());
+	}
+
+	@Test
+	public void validateInvalidDollarSchemaUriReturnsReportWithError() throws ProcessingException {
+		ObjectNode node = objectMapper.createObjectNode();
+		node.put("$schema", ":");
+
+		ListProcessingReport report = validateMojo.validate(node, uriManager, null);
 		assertFalse(report.isSuccess());
 		assertEquals(LogLevel.ERROR, Iterators.getOnlyElement(report.iterator()).getLogLevel());
 	}
